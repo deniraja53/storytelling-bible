@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Kisah Samaria yang Baik Hati - Game Interaktif</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+        :root {
+            --primary: #C2185B;
+            --secondary: #F48FB1;
+            --accent: #FF4081;
+            --neon: #FFB74D;
+            --bg-dark: #2D0B20;
+            --glass: rgba(255, 255, 255, 0.12);
+            --glass-thick: rgba(255, 255, 255, 0.2);
+            --glow: 0 0 25px rgba(255, 64, 129, 0.4);
+            --border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+        /* ... existing reset and mobile setup ... */
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #1A0513;
+            color: #fff;
+            margin: 0; padding: 0; height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        /* Particles / Stardust Background */
+        #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; opacity: 0.6; pointer-events: none; }
+        .copyright {
+            margin-top: 40px; font-size: 11px; color: #fff; opacity: 0.6;
+            letter-spacing: 1.5px; text-transform: uppercase;
+        }
+        .bg-mesh {
+            position: absolute; width: 100%; height: 100%;
+            background:
+                radial-gradient(circle at 20% 30%, #4A0E2E 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, #880E4F 0%, transparent 40%),
+                radial-gradient(circle at 50% 10%, #C2185B 0%, transparent 50%);
+            z-index: -1; filter: blur(30px); opacity: 0.8; pointer-events: none;
+        }
+
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column; padding: 20px;
+            transition: opacity 0.4s ease-in-out; overflow-y: auto;
+            z-index: 1;
+        }
+        .screen.active { display: flex; animation: slideInUp 0.6s cubic-bezier(0.23, 1, 0.32, 1); }
+
+        @keyframes slideInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Welcome & Story Selection Screen */
+        #welcome-screen, #story-selection-screen {
+            justify-content: center; align-items: center; text-align: center;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            padding: 50px 40px;
+            border-radius: 40px;
+            border: var(--border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), var(--glow);
+            width: 100%; max-width: 440px;
+            position: relative;
+            z-index: 10;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: conic-gradient(transparent, rgba(255, 64, 129, 0.3), transparent 30%);
+            animation: rotateGlow 8s linear infinite;
+            pointer-events: none; z-index: 1;
+        }
+
+        @keyframes rotateGlow { 100% { transform: rotate(360deg); } }
+
+        .card-content { position: relative; z-index: 10; width: 100%; }
+
+        .bible-story { 
+            font-size: 13px; font-weight: 800; letter-spacing: 5px; color: var(--neon); 
+            margin-bottom: 12px; text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(255, 183, 77, 0.5);
+        }
+        h1 { 
+            color: #fff; margin-bottom: 15px; font-weight: 800; font-size: 28px; 
+            line-height: 1.2; text-shadow: 0 4px 10px rgba(0,0,0,0.5); 
+        }
+        .subtitle { color: #F8BBD0; margin-bottom: 40px; line-height: 1.6; font-size: 15px; }
+
+        .input-group label { display: block; margin-bottom: 12px; font-weight: 700; color: #fff; font-size: 14px; opacity: 0.8; }
+        
+        .select-group { display: flex; gap: 12px; justify-content: center; margin-bottom: 30px; }
+        .select-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 18px; border-radius: 20px; color: white;
+            font-weight: 800; cursor: pointer; transition: all 0.4s; flex: 1;
+            text-align: center; font-size: 18px;
+        }
+        .select-item:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--accent); }
+        .select-item.selected {
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            border-color: #fff; transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(255, 64, 129, 0.4);
+        }
+
+        .btn-main {
+            background: linear-gradient(90deg, #AD1457, #E91E63, #FF4081, #C2185B);
+            background-size: 300% 100%;
+            color: white; border: none; padding: 22px 32px; border-radius: 50px;
+            font-size: 22px; font-weight: 900; cursor: pointer;
+            box-shadow: 0 4px 25px rgba(233, 30, 99, 0.6);
+            transition: all 0.4s;
+            animation: gradientMove 3s infinite, pulse-glow 2s infinite; 
+            width: 100%; text-transform: uppercase; letter-spacing: 2px;
+            position: relative; overflow: hidden;
+        }
+
+        .btn-main::after {
+            content: ''; position: absolute; top: -50%; left: -60%; width: 50px; height: 200%;
+            background: rgba(255, 255, 255, 0.3); transform: rotate(25deg);
+            animation: sweep 4s infinite;
+        }
+
+        @keyframes sweep { 0% { left: -60%; } 20% { left: 120%; } 100% { left: 120%; } }
+        @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        @keyframes pulse-glow {
+            0% { transform: scale(1); box-shadow: 0 4px 20px rgba(233, 30, 99, 0.5), 0 0 10px rgba(255, 64, 129, 0.3); }
+            50% { transform: scale(1.02); box-shadow: 0 6px 30px rgba(233, 30, 99, 0.7), 0 0 25px rgba(255, 64, 129, 0.6); }
+            100% { transform: scale(1); box-shadow: 0 4px 20px rgba(233, 30, 99, 0.5), 0 0 10px rgba(255, 64, 129, 0.3); }
+        }
+
+        .select-group {
+            display: flex; gap: 10px; justify-content: center;
+        }
+        .select-item {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 15px 20px; border-radius: 15px; color: white;
+            font-weight: 700; cursor: pointer; transition: all 0.3s; flex: 1;
+            text-align: center;
+        }
+        .select-item.selected {
+            background: var(--accent);
+            border-color: #fff;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(233, 30, 99, 0.4);
+        }
+
+        /* Story Selection Screen */
+        .story-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px; }
+        .story-card {
+            background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 20px; border-radius: 20px; color: white; cursor: pointer;
+            transition: all 0.3s; text-align: left; display: flex; align-items: center; gap: 15px;
+        }
+        .story-card:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-3px); }
+        .story-card .icon { font-size: 30px; }
+        .story-card .title { font-weight: 700; font-size: 16px; flex: 1; }
+
+        .btn-back {
+            position: absolute; top: 20px; left: 20px; background: none; border: none;
+            color: white; font-size: 24px; cursor: pointer; width: auto; padding: 0; box-shadow: none; animation: none;
+        }
+
+        /* Result summary and headers */
+        #game-screen .header h1 { font-size: 18px; margin: 0; color: #fff; }
+
+        .narrative-area {
+            flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column;
+            gap: 15px; padding-bottom: 140px; scroll-behavior: smooth;
+        }
+
+        .narrative-slot {
+            background: white; padding: 15px; border-radius: 18px;
+            display: flex; align-items: flex-start; gap: 15px;
+            border: 2px dashed #CFD8DC; transition: all 0.4s;
+        }
+
+        .narrative-slot.active {
+            border: 2px solid var(--primary); background: #FFF3E0;
+            box-shadow: 0 8px 20px rgba(255, 152, 0, 0.15);
+            transform: scale(1.02);
+        }
+
+        .narrative-slot.filled {
+            border: 2px solid #81C784; background: #F1F8E9;
+        }
+
+        .slot-num {
+            background: #FFCC80; color: #E65100; min-width: 32px; height: 32px;
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            font-weight: 800; font-size: 14px;
+        }
+
+        .slot-img-container {
+            width: 70px; height: 70px; background: #ECEFF1; border-radius: 12px;
+            overflow: hidden; display: flex; justify-content: center; align-items: center;
+            flex-shrink: 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .slot-img-container img { width: 100%; height: 100%; object-fit: cover; }
+
+        .slot-text { flex-grow: 1; font-size: 15px; line-height: 1.5; color: #455A64; }
+        .narrative-slot.active .slot-text { font-weight: 600; color: #E65100; }
+
+        .deck-wrapper {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            padding: 15px; background: linear-gradient(to top, rgba(255,255,255,1) 80%, rgba(255,255,255,0));
+            z-index: 100;
+        }
+
+        .deck {
+            background: var(--glass); backdrop-filter: blur(20px);
+            padding: 15px; border-radius: 20px; display: flex; gap: 12px;
+            overflow-x: auto; border: 1px solid rgba(136, 14, 79, 0.2);
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+            scrollbar-width: none;
+        }
+        .deck::-webkit-scrollbar { display: none; }
+
+        .card-img {
+            width: 85px; height: 85px; background: white; border-radius: 16px;
+            flex-shrink: 0; cursor: pointer; border: 2px solid transparent;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            padding: 0; overflow: hidden;
+        }
+        .card-img img { width: 100%; height: 100%; object-fit: cover; }
+        .card-img:hover { transform: translateY(-5px) scale(1.05); }
+        .card-img:active { transform: scale(0.9); }
+
+        /* Reflection & Result */
+        .screen .card h2, .screen .card p { color: var(--text-dark); }
+        textarea {
+            width: 100%; height: 160px; border-radius: 18px; padding: 18px;
+            border: 2px solid #F48FB1; margin: 20px 0; font-size: 16px;
+            font-family: inherit; line-height: 1.6; resize: none;
+            background: rgba(255,255,255,0.9);
+            color: #000;
+            position: relative; z-index: 50;
+            pointer-events: auto;
+        }
+        textarea:focus { border-color: var(--accent); background: white; outline: none; box-shadow: 0 0 15px rgba(255, 64, 129, 0.2); }
+
+        .result-summary {
+            text-align: left; background: rgba(255,255,255,0.7);
+            padding: 25px; border-radius: 20px; margin: 20px 0;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 152, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+
+        /* Overlay for Game Over */
+        #game-over-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+            z-index: 1000; display: none; justify-content: center; align-items: center;
+            padding: 20px; text-align: center; color: white;
+        }
+
+        /* SVG Colors */
+        .svg-man { fill: #FFCCBC; }
+        .svg-road { fill: #90A4AE; }
+        .svg-sun { fill: #FFEB3B; }
+        .svg-heart { fill: #F44336; }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+    <div class="bg-mesh"></div>
+
+    <!-- Game Over Overlay -->
+    <div id="game-over-overlay">
+        <div class="card" style="background: white; color: var(--text-dark);">
+            <h1 style="color: var(--error);">Yah, Habis Nyawa!</h1>
+            <p>Jangan menyerah! Ayo coba lagi!</p>
+            <button onclick="resetGame()" style="background: var(--error);">Mulai Lagi</button>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="welcome-screen" class="screen active">
+        <div class="card">
+            <div class="card-content">
+                <div class="bible-story">BANTU PAK DENI</div>
+                <h1>STORYTELLING BIBLE<br>Menyusun Cerita Alkitab</h1>
+                <p class="subtitle">Ayo pilih kelompokmu dan mulai petualangan iman yang menakjubkan ini!</p>
+                
+                <div class="input-group">
+                    <label>PILIH KELOMPOK</label>
+                    <div class="select-group" id="kelompok-selector">
+                        <div class="select-item" onclick="selectKelompok('A')">A</div>
+                        <div class="select-item" onclick="selectKelompok('B')">B</div>
+                        <div class="select-item" onclick="selectKelompok('C')">C</div>
+                    </div>
+                </div>
+                
+                <button class="btn-main" onclick="goToStorySelection()">Let's Goo</button>
+                <div class="copyright">design by deniraja53 • 2026</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Story Selection Screen -->
+    <div id="story-selection-screen" class="screen">
+        <button class="btn-back" onclick="switchScreen('welcome-screen')">🔙</button>
+        <div class="card">
+            <div class="card-content">
+                <h1>Pilih Cerita</h1>
+                <p class="subtitle">Kelompok <span id="selected-kelompok-display"></span>, pilih cerita yang ingin kamu susun!</p>
+                
+                <div class="story-grid">
+                    <div class="story-card" onclick="startGame('samaria')">
+                        <div class="icon">✝️</div>
+                        <div class="title">Orang Samaria yang Baik Hati</div>
+                    </div>
+                    <div class="story-card" onclick="startGame('rasul')">
+                        <div class="icon">✝️</div>
+                        <div class="title">Yesus Memilih Para Rasul-Nya</div>
+                    </div>
+                    <div class="story-card" onclick="startGame('yairus')">
+                        <div class="icon">✝️</div>
+                        <div class="title">Putri Yairus Dibangkitkan</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+        <div class="header">
+            <div>
+                <b id="display-name" style="color: #E65100;">Nama</b>
+                <span id="display-class" style="font-size: 13px; color: #78909C; display: block;">Kelas</span>
+            </div>
+            <div class="stats">
+                <div class="badge score-badge">⭐ <span id="score">0</span></div>
+                <div class="badge lives-badge" id="lives-container">❤️ <span id="lives">3</span></div>
+            </div>
+        </div>
+        
+        <div class="narrative-area" id="narrative-area">
+            <!-- Slots will be injected here -->
+        </div>
+
+        <div class="deck-wrapper">
+            <div class="deck" id="card-deck">
+                <!-- Cards will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Reflection Screen -->
+    <div id="reflection-screen" class="screen" style="justify-content: center; align-items: center; background: #E3F2FD;">
+        <div class="card" style="max-width: 500px; background: rgba(255,255,255,0.9);">
+            <div class="card-content">
+                <div style="font-size: 40px; margin-bottom: 15px;">✍️</div>
+                <h2 style="color: #333;">Refleksi Hati</h2>
+                <p style="color: #444;">Hore! Ceritanya sudah tersusun rapi. <br>Nah, bagaimana cara kamu menjadi <b>Samaria yang baik</b> bagi temanmu minggu ini?</p>
+                <textarea id="input-reflection" placeholder="Tulis rencana aksi nyatamu di sini... (Contoh: Menolong teman yang jatuh)"></textarea>
+                <button class="btn-main" onclick="showFinalResult()">Kumpulkan Tugas</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Screen -->
+    <div id="result-screen" class="screen" style="justify-content: center; align-items: center; background: #FFF9C4;">
+        <div class="card" style="max-width: 500px; background: rgba(255,255,255,0.9);">
+            <div class="card-content">
+                <div style="font-size: 40px; margin-bottom: 10px;">🏆</div>
+                <h2 style="color: #333;">Hasil Petualangan</h2>
+                <div class="result-summary" id="result-summary">
+                    <!-- Data injected here -->
+                </div>
+                <p style="color: #455A64; font-size: 14px; margin-bottom: 25px; padding: 10px; background: rgba(0,0,0,0.05); border-radius: 10px;">
+                    📸 <b>PENTING:</b> Silakan Ambil Tangkapan Layar (Screenshot) halaman ini sebagai bukti tugas kamu!
+                </p>
+                <button class="btn-main" onclick="resetGame()" style="background: #78909C;">Selesai & Main Lagi</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Stardust Particle System
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function initParticles() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            particles = [];
+            for (let i = 0; i < 60; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2,
+                    speedX: Math.random() * 0.5 - 0.25,
+                    speedY: Math.random() * 0.5 - 0.25,
+                    opacity: Math.random()
+                });
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.x += p.speedX;
+                p.y += p.speedY;
+                if (p.x < 0) p.x = canvas.width;
+                if (p.x > canvas.width) p.x = 0;
+                if (p.y < 0) p.y = canvas.height;
+                if (p.y > canvas.height) p.y = 0;
+                
+                ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', initParticles);
+        initParticles();
+        animate();
+
+        const allStories = {
+            samaria: {
+                title: "Orang Samaria yang Baik Hati",
+                data: [
+                    { id: 1, text: "Seorang ahli Taurat bertanya: 'Siapakah sesamaku manusia?' Yesus lalu menceritakan perumpamaan ini.", img: "orang samaria/1.jpg" },
+                    { id: 2, text: "Seorang pria dalam perjalanan ke Yerikho dirampok, dipukuli, dan dibiarkan tergeletak terluka.", img: "orang samaria/2.jpg" },
+                    { id: 3, text: "Seorang Imam lewat, tapi ketika melihat orang terluka itu, ia lewat dari seberang jalan tanpa menolong.", img: "orang samaria/3.jpg" },
+                    { id: 4, text: "Lalu orang Lewi lewat, ia juga melihatnya namun tetap berjalan terus dan menjauh.", img: "orang samaria/4.jpg" },
+                    { id: 5, text: "Datanglah orang Samaria. Ia kasihan melihatnya, lalu membalut luka orang itu dengan minyak dan anggur.", img: "orang samaria/5.jpg" },
+                    { id: 6, text: "Ia menaikkan orang itu ke keledainya, membawanya ke penginapan, dan merawatnya di sana.", img: "orang samaria/6.jpg" },
+                    { id: 7, text: "Yesus berpesan: 'Pergilah, dan perbuatlah demikian!' Kita harus menolong siapa saja yang butuh bantuan.", img: "orang samaria/7.jpg" }
+                ]
+            },
+            rasul: {
+                title: "Yesus Memilih Para Rasul-Nya",
+                data: [
+                    { id: 1, text: "Suatu hari Yesus mengajar orang-orang dari sebuah perahu milik Petrus di tepi pantai Danau Galilea.", img: "rasul/1.jpg" },
+                    { id: 2, text: "Petrus belum dapat ikan semalam pun. Yesus menyuruhnya menebarkan jala ke air yang dalam.", img: "rasul/2.jpg" },
+                    { id: 3, text: "Mereka menangkap sangat banyak ikan sehingga jala mereka mulai rusak.", img: "rasul/3.jpg" },
+                    { id: 4, text: "Petrus memanggil temannya untuk menolong. Ikan-ikan itu mengisi kedua perahu sampai mulai tenggelam.", img: "rasul/4.jpg" },
+                    { id: 5, text: "Petrus dan teman-temannya takjub. Mereka tahu bahwa Yesus yang telah membuat hal ini terjadi.", img: "rasul/5.jpg" },
+                    { id: 6, text: "Petrus berlutut di kaki Juruselamat. Yesus memberi tahu Petrus agar jangan takut.", img: "rasul/6.jpg" },
+                    { id: 7, text: "Yesus menyuruh Petrus, Yakobus, dan Yohanes untuk mengikuti-Nya dan menjadi “penjala manusia”.", img: "rasul/7.jpg" },
+                    { id: 8, text: "Yesus berdoa sepanjang malam lalu memilih dan menahbiskan dua belas Rasul untuk memimpin Gereja-Nya.", img: "rasul/8.jpg" },
+                    { id: 9, text: "Para Rasul pergi mengajar Injil dan menyembuhkan orang. Mereka kembali menceritakan apa yang dilakukan.", img: "rasul/8.jpg" }
+                ]
+            },
+            yairus: {
+                title: "Putri Yairus Dibangkitkan",
+                data: [
+                    { id: 1, text: "Yairus, pemimpin yang dihormati, sangat sedih karena putrinya, Talitha, sakit parah.", img: "yairus/1.png" },
+                    { id: 2, text: "Yairus berlutut di depan Yesus dan memohon bantuan untuk menyembuhkan putrinya.", img: "yairus/2.png" },
+                    { id: 3, text: "Yesus pergi bersama Yairus, namun terhenti sejenak karena Hana menyentuh jubah-Nya.", img: "yairus/3.png" },
+                    { id: 4, text: "Utusan datang mengabarkan bahwa Talitha meninggal, namun Yesus menenangkan Yairus.", img: "yairus/4.png" },
+                    { id: 5, text: "Yesus berkata, 'Jangan takut, percaya saja,' lalu melanjutkan perjalanan ke rumah Yairus.", img: "yairus/5.png" },
+                    { id: 6, text: "Di rumah, Yesus berkata anak itu hanya tidur, namun orang-orang menertawakan-Nya.", img: "yairus/6.png" },
+                    { id: 7, text: "Yesus masuk ke kamar Talitha bersama Yairus dan Mara, istrinya.", img: "yairus/7.png" },
+                    { id: 8, text: "Yesus memegang tangan Talitha di dalam ruangan yang penuh kedamaian.", img: "yairus/8.png" },
+                    { id: 9, text: "Yesus berseru, 'Talitha koum!', dan seketika itu juga Talitha terbangun.", img: "yairus/9.png" },
+                    { id: 10, text: "Semua orang bersuka cita melihat Talitha bangun dan mulai berjalan kembali.", img: "yairus/10.png" }
+                ]
+            }
+        };
+
+        let state = {
+            kelompok: '',
+            currentStory: null,
+            score: 0,
+            lives: 3,
+            currentStep: 0,
+            deck: [],
+            reflection: ''
+        };
+
+        function switchScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            setTimeout(() => {
+                const target = document.getElementById(screenId);
+                target.classList.add('active');
+                target.scrollTop = 0;
+            }, 50);
+        }
+
+        function selectKelompok(k) {
+            state.kelompok = k;
+            document.querySelectorAll('.select-item').forEach(item => {
+                item.classList.remove('selected');
+                if (item.innerText === k) item.classList.add('selected');
+            });
+        }
+
+        function goToStorySelection() {
+            if (!state.kelompok) {
+                alert('Pilih Kelompok dulu ya!');
+                return;
+            }
+            document.getElementById('selected-kelompok-display').innerText = state.kelompok;
+            switchScreen('story-selection-screen');
+        }
+
+        function startGame(storyKey) {
+            const story = allStories[storyKey];
+            state.currentStory = story;
+            state.score = 0;
+            state.lives = 3;
+            state.currentStep = 0;
+            state.deck = [...story.data].sort(() => Math.random() - 0.5);
+
+            document.getElementById('display-name').innerText = "Kelompok " + state.kelompok;
+            document.getElementById('display-class').innerText = story.title;
+            
+            document.getElementById('game-over-overlay').style.display = 'none';
+            
+            updateUI();
+            switchScreen('game-screen');
+        }
+
+        function updateUI() {
+            document.getElementById('score').innerText = state.score;
+            document.getElementById('lives').innerText = state.lives;
+
+            // Render Slots
+            const area = document.getElementById('narrative-area');
+            area.innerHTML = '';
+            state.currentStory.data.forEach((item, index) => {
+                const isFilled = index < state.currentStep;
+                const isActive = index === state.currentStep;
+                
+                const slot = document.createElement('div');
+                slot.className = `narrative-slot ${isActive ? 'active' : ''} ${isFilled ? 'filled' : ''}`;
+                slot.innerHTML = `
+                    <div class="slot-num">${index + 1}</div>
+                    <div class="slot-img-container">${isFilled ? `<img src="${item.img}" alt="story">` : ''}</div>
+                    <div class="slot-text">${item.text}</div>
+                `;
+                area.appendChild(slot);
+                
+                if (isActive) {
+                    setTimeout(() => {
+                        slot.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                }
+            });
+
+            // Render Deck
+            const deckEl = document.getElementById('card-deck');
+            deckEl.innerHTML = '';
+            state.deck.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card-img';
+                card.innerHTML = `<img src="${item.img}" alt="deck">`;
+                card.onclick = () => handleCardClick(item.id, card);
+                deckEl.appendChild(card);
+            });
+        }
+
+        function handleCardClick(id, cardElement) {
+            console.log("Card Clicked:", id);
+            if (!state.currentStory) return;
+            
+            const targetId = state.currentStory.data[state.currentStep].id;
+            console.log("Target ID:", targetId, "Type:", typeof targetId);
+            console.log("Clicked ID:", id, "Type:", typeof id);
+
+            if (id == targetId) { // Loose equality to handle potential string/number mismatch
+                console.log("Match Found successfully!");
+                state.score += 15;
+                state.currentStep++;
+                state.deck = state.deck.filter(item => item.id != id);
+
+                if (state.currentStep >= state.currentStory.data.length) {
+                    setTimeout(() => switchScreen('reflection-screen'), 600);
+                } else {
+                    updateUI();
+                }
+            } else {
+                console.log("Mismatch detected!");
+                state.lives--;
+                cardElement.classList.add('shake');
+                const gameScreen = document.getElementById('game-screen');
+                if (gameScreen) gameScreen.classList.add('shake');
+                
+                setTimeout(() => {
+                    cardElement.classList.remove('shake');
+                    if (gameScreen) gameScreen.classList.remove('shake');
+                }, 500);
+                
+                if (state.lives <= 0) {
+                    document.getElementById('game-over-overlay').style.display = 'flex';
+                } else {
+                    updateUI();
+                }
+            }
+        }
+
+        function showFinalResult() {
+            const refField = document.getElementById('input-reflection');
+            const reflection = refField.value.trim();
+            if (!reflection) {
+                refField.style.borderColor = 'var(--error)';
+                alert('Tuliskan rencana aksi nyatamu dulu ya!');
+                return;
+            }
+            state.reflection = reflection;
+
+            const summary = document.getElementById('result-summary');
+            summary.innerHTML = `
+                <div style="border-left: 4px solid var(--accent); padding-left: 15px;">
+                    <p style="margin: 5px 0; color: #333;">📖 <b>Cerita:</b> ${state.currentStory.title}</p>
+                    <p style="margin: 5px 0; color: #333;">👥 <b>Kelompok:</b> ${state.kelompok}</p>
+                    <p style="margin: 5px 0; color: #333;">⭐ <b>Skor:</b> ${state.score} Poin</p>
+                </div>
+                <div style="margin-top: 20px; background: white; padding: 15px; border-radius: 12px; border: 1px dashed #ddd;">
+                    <p style="margin: 0; font-weight: 700; color: var(--accent);">Rencana Aksi Nyataku:</p>
+                    <p style="margin: 10px 0 0 0; line-height: 1.6; color: #37474F;">"${state.reflection}"</p>
+                </div>
+            `;
+
+            switchScreen('result-screen');
+        }
+
+        function resetGame() {
+            // Clear state
+            state.kelompok = '';
+            document.getElementById('input-reflection').value = '';
+            document.getElementById('input-reflection').style.borderColor = '#B3E5FC';
+            
+            // UI reset
+            document.querySelectorAll('.select-item').forEach(item => item.classList.remove('selected'));
+            document.getElementById('game-over-overlay').style.display = 'none';
+            
+            switchScreen('welcome-screen');
+        }
+
+    </script>
+  </body>
+</html>
